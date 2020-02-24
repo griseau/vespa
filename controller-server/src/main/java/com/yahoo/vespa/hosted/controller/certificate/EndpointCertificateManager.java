@@ -97,6 +97,11 @@ public class EndpointCertificateManager {
                 curator.readEndpointCertificateMetadata(instance.id())
                         .orElseGet(() -> provisionEndpointCertificate(instance));
 
+        var sansInCertificate = endpointCertificateMetadata.requestedDnsSans();
+        var sansForZone = dnsNamesOf(instance.id(), List.of(zone));
+        if (sansInCertificate.isPresent() && !sansInCertificate.get().containsAll(sansForZone))
+            endpointCertificateMetadata = provisionEndpointCertificate(instance);
+
         // If feature flag set for application, look for and use refreshed certificate
         if (useRefreshedEndpointCertificate.with(FetchVector.Dimension.APPLICATION_ID, instance.id().serializedForm()).value()) {
             var latestAvailableVersion = latestVersionInSecretStore(endpointCertificateMetadata);
